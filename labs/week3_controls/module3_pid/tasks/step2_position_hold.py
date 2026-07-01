@@ -14,7 +14,7 @@ import drone_utils as uav_utils
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -74,13 +74,13 @@ def update(drone):
     # 1. dt = drone.get_delta_time()
     # 2. velocity = drone.physics.get_linear_velocity()   # (x=right, y=up, z=forward)
     # 3. _pos += velocity[2] * dt
-    # 4. error = TARGET_DIST - _pos ; _err_int += error*dt ; err_dot = -velocity[2]
+    # 4. error = TARGET_DIST - _pos; update _err_int; err_dot = -velocity[2]
     # 5. pitch = uav_utils.clamp(pid_control(error, _err_int, err_dot, KP, KI, KD),
     #                            -PITCH_LIMIT, PITCH_LIMIT)
     # 6. Hold height too: throttle = clamp(ALT_KP*(TARGET_HEIGHT - neo_lab.height(drone)),
     #                                      -THROTTLE_LIMIT, THROTTLE_LIMIT)
-    # 7. send_pcmd(pitch, 0, 0, throttle); finish once _pos has passed
-    #    (TARGET_DIST - DIST_TOL) AND the drone has slowed below SETTLE_SPEED for HOLD_TIME
+    # 7. send_pcmd(pitch, 0, 0, throttle); finish once _pos reaches TARGET_DIST and the
+    #    drone has slowed below SETTLE_SPEED for HOLD_TIME (don't check before MIN_TRAVEL).
 
     ###### END PUT CODE HERE #########
     ##################################

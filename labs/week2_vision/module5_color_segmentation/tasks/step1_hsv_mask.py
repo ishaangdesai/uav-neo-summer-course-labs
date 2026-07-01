@@ -16,7 +16,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -47,10 +47,11 @@ def update(drone):
     #### START PUT CODE HERE #########
 
     # The gates glow cyan; the wall is blue. A single HSV range isolates the gates.
-    # 1. hsv  = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
-    # 2. mask = cv2.inRange(hsv, LOWER, UPPER)        # LOWER/UPPER are cyan bounds
-    # 3. coverage = np.count_nonzero(mask) / mask.size
-    # 4. When _timer >= HOVER_TIME: print coverage, set _done = True
+    # 1. image = drone.camera.get_color_image()       # forward camera (BGR)
+    # 2. hsv  = cv2.cvtColor(image, cv2.COLOR_BGR2HSV)
+    # 3. mask = cv2.inRange(hsv, LOWER, UPPER)        # LOWER/UPPER are cyan bounds
+    # 4. coverage = np.count_nonzero(mask) / mask.size
+    # 5. _timer += drone.get_delta_time(); print coverage, finish at HOVER_TIME.
 
     ###### END PUT CODE HERE #########
     ##################################

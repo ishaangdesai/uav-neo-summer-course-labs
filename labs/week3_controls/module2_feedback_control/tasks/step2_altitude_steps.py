@@ -13,7 +13,7 @@ import drone_utils as uav_utils
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -46,13 +46,13 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # Reuse your proportional controller, but the target changes over time.
-    # 1. If _index >= len(SETPOINTS): stop, set _done = True, return.
-    # 2. target = SETPOINTS[_index]
-    # 3. error = target - neo_lab.height(drone)
-    # 4. throttle = uav_utils.clamp(KP * error, -THROTTLE_LIMIT, THROTTLE_LIMIT)
-    # 5. Accumulate _hold while abs(error) < TOL.
-    # 6. When _hold >= HOLD_TIME: advance _index += 1 and reset _hold = 0.0
+    # GOAL: hold each height in SETPOINTS in turn, moving to the next once you have
+    # stayed within TOL of the current one for HOLD_TIME. Finish after the last.
+    #
+    # This is your Step 1 proportional controller (throttle = clamp(KP * error)) with
+    # one change: the target is SETPOINTS[_index] instead of a fixed value, and you
+    # advance _index after holding each one. Stop and set _done once _index runs past
+    # the end of the list.
 
     ###### END PUT CODE HERE #########
     ##################################

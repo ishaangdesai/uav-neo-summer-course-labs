@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -49,12 +49,12 @@ def update(drone):
     mask = neo_lab.bright_mask(image, V_MIN) > 0
     points = np.argwhere(mask)
     if len(points) < MIN_PIXELS:
-        drone.flight.stop()                 # lost the edge -> hover and wait
-        return False
-    edge_col = points[:, 1].mean()          # average column of the bright edge
-    offset = (edge_col - IMAGE_CENTER) / IMAGE_CENTER   # -1 (left) .. +1 (right)
-    roll = uav_utils.clamp(offset * MAX_ROLL, -MAX_ROLL, MAX_ROLL)
-    drone.flight.send_pcmd(FORWARD_PITCH, roll, 0, 0)
+        drone.flight.stop()                 # lost the edge -> hover, but keep the clock running
+    else:
+        edge_col = points[:, 1].mean()      # average column of the bright edge
+        offset = (edge_col - IMAGE_CENTER) / IMAGE_CENTER   # -1 (left) .. +1 (right)
+        roll = uav_utils.clamp(offset * MAX_ROLL, -MAX_ROLL, MAX_ROLL)
+        drone.flight.send_pcmd(FORWARD_PITCH, roll, 0, 0)
     if _timer >= FOLLOW_TIME:
         drone.flight.stop()
         print("[Step 3] Finished following the edge")

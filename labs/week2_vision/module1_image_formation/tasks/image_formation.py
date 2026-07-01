@@ -67,7 +67,6 @@ def intrinsic_matrix(fx, fy, cx, cy):
     """
     ##################################
     #### START PUT CODE HERE #########
-    # Hint: use np.array([...]) with three rows.
     K = np.eye(3)  # YOUR CODE HERE
     ###### END PUT CODE HERE #########
     ##################################
@@ -86,7 +85,6 @@ def project_world_point(K, R, t, point_world):
     """
     ##################################
     #### START PUT CODE HERE #########
-    # Hint: use the @ operator for matrix multiply, then divide by the 3rd element.
     u = 0.0  # YOUR CODE HERE
     v = 0.0  # YOUR CODE HERE
     ###### END PUT CODE HERE #########

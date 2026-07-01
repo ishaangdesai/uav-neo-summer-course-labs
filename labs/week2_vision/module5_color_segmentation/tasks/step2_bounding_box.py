@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -48,10 +48,11 @@ def update(drone):
 
     # The long glowing boundary lines are also cyan, so use the gate helper, which
     # keeps only square-ish (gate-shaped) contours.
-    # 1. best = neo_lab.largest_cyan_gate(image, MIN_AREA)
-    # 2. if best is None: return False
-    # 3. x, y, w, h = cv2.boundingRect(best)
-    # 4. When _timer >= HOVER_TIME: print the box and set _done = True
+    # 1. image = drone.camera.get_color_image()
+    # 2. best = neo_lab.largest_cyan_gate(image, MIN_AREA)   # or None
+    # 3. If best is None -> return False.
+    # 4. x, y, w, h = cv2.boundingRect(best)
+    # 5. _timer += drone.get_delta_time(); print the box, finish at HOVER_TIME.
 
     ###### END PUT CODE HERE #########
     ##################################

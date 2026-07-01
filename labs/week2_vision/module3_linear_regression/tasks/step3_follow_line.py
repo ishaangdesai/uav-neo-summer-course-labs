@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -47,14 +47,18 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. Build the bright-edge mask and points = np.argwhere(mask), like Step 2.
-    # 2. If too few points: drone.flight.stop(); return False
-    # 3. edge_col = points[:, 1].mean()
-    # 4. offset = (edge_col - IMAGE_CENTER) / IMAGE_CENTER      # -1..+1
-    # 5. roll = uav_utils.clamp(offset * MAX_ROLL, -MAX_ROLL, MAX_ROLL)
-    #    (edge to the right -> positive offset -> roll right to recenter)
-    # 6. drone.flight.send_pcmd(FORWARD_PITCH, roll, 0, 0)
-    # 7. _timer += drone.get_delta_time(); when >= FOLLOW_TIME stop and set _done = True
+    # GOAL: fly forward at FORWARD_PITCH while strafing (roll) to keep the bright
+    # edge under the middle of the downward camera.
+    #
+    # Tools: drone.camera.get_downward_image(); neo_lab.bright_mask(image, V_MIN);
+    #        np.argwhere(mask) -> bright pixel (row, col); uav_utils.clamp(...);
+    #        drone.flight.send_pcmd(pitch, roll, yaw, throttle).
+    #
+    # The average column of the bright pixels tells you how far off-center the edge
+    # is. Turn that pixel offset into a roll command (clamped to MAX_ROLL): an edge
+    # right of center means roll right to chase it. If you see too few bright pixels,
+    # hold position rather than steering on noise -- but keep the timer running every
+    # frame and finish after FOLLOW_TIME regardless, so losing the edge never hangs.
 
     ###### END PUT CODE HERE #########
     ##################################

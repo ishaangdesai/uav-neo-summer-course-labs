@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -66,18 +66,19 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # Vision gives the error, PID turns it into a yaw command. Track ONE gate so the
-    # target does not jump between gates as you turn.
-    # 1. best = neo_lab.gate_nearest_center(image, V_MIN, MIN_AREA) if _target_col is None
-    #    else neo_lab.gate_nearest_to(image, _target_col, V_MIN, MIN_AREA)
-    # 2. If best is None: spin to search (send_pcmd(0,0,SEARCH_YAW,0)), set _target_col=None,
-    #    reset _err_int and _hold, return False.
-    # 3. row, col = uav_utils.get_contour_center(best) ; _target_col = col
-    # 4. error = (col - COL_CENTER) / COL_CENTER          # normalized pixel error
-    # 5. Update _err_int (clamped), err_dot, _prev_err (see Step 1).
-    # 6. yaw = uav_utils.clamp(pid_control(error, _err_int, err_dot, KP, KI, KD),
-    #                          -MAX_YAW, MAX_YAW)
-    # 7. send_pcmd(0, 0, yaw, 0); finish once centered (abs(error) < CENTER_TOL) for HOLD_TIME
+    # GOAL: yaw with a PID loop so a glowing gate stays centered in the forward
+    # camera; finish once it is centered (abs(error) < CENTER_TOL) for HOLD_TIME.
+    #
+    # Tools: drone.camera.get_color_image(); drone.get_delta_time();
+    #        neo_lab.gate_nearest_center(image, V_MIN, MIN_AREA) to first acquire a gate;
+    #        neo_lab.gate_nearest_to(image, _target_col, V_MIN, MIN_AREA) to keep
+    #        following that same gate as you turn; uav_utils.get_contour_center;
+    #        uav_utils.clamp; your pid_control() above.
+    #
+    # Lock onto ONE gate: store its column in _target_col and follow the gate nearest
+    # that column each frame, so the target does not jump between gates. The normalized
+    # error is (col - COL_CENTER) / COL_CENTER; feed it through PID to a yaw command
+    # (clamped to MAX_YAW). With no gate in view, spin at SEARCH_YAW and clear _target_col.
 
     ###### END PUT CODE HERE #########
     ##################################

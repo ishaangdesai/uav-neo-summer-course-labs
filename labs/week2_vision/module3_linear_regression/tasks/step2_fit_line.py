@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -59,11 +59,12 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. Build the bright-edge mask like Step 1: neo_lab.bright_mask(image, V_MIN) > 0
-    # 2. points = np.argwhere(mask)          # (row, col) coordinates of bright pixels
-    # 3. if len(points) < MIN_PIXELS: return False
-    # 4. m, b = fit_line(points)             # <-- implement fit_line above
-    # 5. When _timer >= HOVER_TIME: print m and b, then set _done = True
+    # 1. image = drone.camera.get_downward_image()
+    # 2. Build the bright-edge mask like Step 1, then points = np.argwhere(mask)
+    #    to get the (row, col) of every bright pixel.
+    # 3. If len(points) < MIN_PIXELS there is not enough edge to fit -> return False.
+    # 4. m, b = fit_line(points)             # implement fit_line above first
+    # 5. _timer += drone.get_delta_time(); print m, b and finish at HOVER_TIME.
 
     ###### END PUT CODE HERE #########
     ##################################

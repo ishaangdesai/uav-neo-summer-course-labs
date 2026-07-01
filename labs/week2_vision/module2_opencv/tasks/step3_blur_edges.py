@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -44,12 +44,15 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. gray    = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-    # 2. blurred = cv2.blur(gray, (KERNEL_SIZE, KERNEL_SIZE))
-    # 3. sobel_x = cv2.Sobel(blurred, cv2.CV_64F, 1, 0, ksize=3)
-    #    sobel_y = cv2.Sobel(blurred, cv2.CV_64F, 0, 1, ksize=3)
-    # 4. magnitude = np.sqrt(sobel_x**2 + sobel_y**2)
-    # 5. When _timer >= HOVER_TIME: print magnitude.mean(), set _done = True
+    # GOAL: report the average edge strength in the downward image.
+    #
+    # Tools: drone.camera.get_downward_image(); cv2.cvtColor(.., COLOR_BGR2GRAY);
+    #        cv2.blur(gray, (KERNEL_SIZE, KERNEL_SIZE)); cv2.Sobel(.., cv2.CV_64F, ..).
+    #
+    # A Sobel filter measures how fast brightness changes in one direction. Run it
+    # once across (x) and once down (y), then combine into one edge magnitude with
+    # sqrt(sx**2 + sy**2). Blur first so single-pixel noise does not dominate.
+    # _timer += drone.get_delta_time(); print the mean magnitude and finish at HOVER_TIME.
 
     ###### END PUT CODE HERE #########
     ##################################

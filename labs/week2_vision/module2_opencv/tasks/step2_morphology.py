@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -45,12 +45,13 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. Build a binary mask like Step 1 (threshold the grayscale image).
-    # 2. kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)
-    # 3. eroded = cv2.erode(mask, kernel, iterations=1)
-    # 4. opened = cv2.dilate(eroded, kernel, iterations=1)
-    # 5. Compare np.count_nonzero(mask) vs np.count_nonzero(opened).
-    # 6. When _timer >= HOVER_TIME: print how many pixels were removed, set _done = True
+    # Opening (erode then dilate) removes small speckles but keeps big shapes.
+    # - image = drone.camera.get_downward_image()
+    # - Build a binary mask the same way as Step 1 (grayscale -> threshold).
+    # - kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)
+    # - Apply cv2.erode then cv2.dilate with that kernel.
+    # - np.count_nonzero before vs after tells you how many pixels were removed.
+    # _timer += drone.get_delta_time(); finish (_done = True) once _timer >= HOVER_TIME.
 
     ###### END PUT CODE HERE #########
     ##################################

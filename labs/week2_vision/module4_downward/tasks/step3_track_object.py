@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -48,16 +48,18 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. best = neo_lab.largest_bright_contour(image, V_MIN, MIN_AREA)
-    # 2. If best is None: drone.flight.stop(); _hold = 0.0; return False
-    # 3. row, col = uav_utils.get_contour_center(best)
-    # 4. err_col = col - COL_CENTER ; err_row = row - ROW_CENTER
-    # 5. roll  = clamp(err_col / COL_CENTER * MAX_TILT, -MAX_TILT, MAX_TILT)
-    #    pitch = clamp(-err_row / ROW_CENTER * MAX_TILT, -MAX_TILT, MAX_TILT)
-    #    (signs may need flipping depending on camera mounting -- experiment!)
-    # 6. drone.flight.send_pcmd(pitch, roll, 0, 0)
-    # 7. Accumulate _hold while both errors < CENTER_TOL; when _hold >= HOLD_TIME,
-    #    stop and set _done = True
+    # GOAL: move with pitch/roll until the gate sits in the middle of the downward
+    # camera, hold that for HOLD_TIME, then finish.
+    #
+    # Tools: drone.camera.get_downward_image(); neo_lab.largest_bright_contour(image,
+    #        V_MIN, MIN_AREA) -> contour or None; uav_utils.get_contour_center(c) ->
+    #        (row, col); uav_utils.clamp(...); drone.flight.send_pcmd(...).
+    #        The image center is (ROW_CENTER, COL_CENTER).
+    #
+    # Drive roll from the column error and pitch from the row error, each scaled to
+    # MAX_TILT. Which sign centers the drone depends on how the camera is mounted --
+    # pick a sign, watch which way it runs, and flip it if it diverges. With no gate
+    # in view, hold position and reset your centered timer.
 
     ###### END PUT CODE HERE #########
     ##################################

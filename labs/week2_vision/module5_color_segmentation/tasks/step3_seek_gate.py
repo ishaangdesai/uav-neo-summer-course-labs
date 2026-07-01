@@ -15,7 +15,7 @@ import numpy as np
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
 import os as _os, sys as _sys
-_d = _os.path.dirname(_os.path.abspath(__file__))
+_d = _os.path.dirname(_os.path.realpath(__file__))
 while _os.path.basename(_d) != "labs" and _os.path.dirname(_d) != _d:
     _d = _os.path.dirname(_d)
 if _d not in _sys.path:
@@ -46,15 +46,17 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
-    # 1. best = neo_lab.largest_cyan_gate(image, MIN_AREA)   # square-ish gate
-    # 2. If best is None: spin to search -> send_pcmd(0, 0, SEARCH_YAW, 0); return False
-    # 3. x, y, w, h = cv2.boundingRect(best)
-    # 4. gate_col = x + w / 2.0 ; err = (gate_col - COL_CENTER) / COL_CENTER
-    # 5. yaw = uav_utils.clamp(err * MAX_YAW, -MAX_YAW, MAX_YAW)
-    # 6. Only fly forward once roughly centered:
-    #    pitch = APPROACH_PITCH if abs(gate_col - COL_CENTER) < CENTER_TOL else 0.0
-    # 7. send_pcmd(pitch, 0, yaw, 0)
-    # 8. When the box is wide enough (w >= TARGET_WIDTH): stop and set _done = True
+    # GOAL: spin until a cyan gate is found, yaw to center it, then fly forward until
+    # it fills the view (bounding-box width >= TARGET_WIDTH).
+    #
+    # Tools: drone.camera.get_color_image(); neo_lab.largest_cyan_gate(image, MIN_AREA);
+    #        cv2.boundingRect(contour) -> (x, y, w, h); uav_utils.clamp(...);
+    #        drone.flight.send_pcmd(pitch, roll, yaw, throttle).
+    #
+    # No gate in view -> turn slowly (SEARCH_YAW) to find one. With a gate, the box
+    # center column vs. COL_CENTER gives a yaw error; only add forward pitch once it is
+    # roughly centered (within CENTER_TOL) so you turn toward it before chasing. The box
+    # grows as you approach; stop when w reaches TARGET_WIDTH.
 
     ###### END PUT CODE HERE #########
     ##################################
