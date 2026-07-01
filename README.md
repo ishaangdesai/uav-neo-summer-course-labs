@@ -2,8 +2,9 @@
 
 MIT BWSI Autonomous Drone Racing Course — UAV Neo
 
-Program an autonomous drone in the **UAV Neo simulator**. Over three weeks you build the
-vision and control skills to make a drone see, fly, and navigate on its own:
+Program an autonomous drone in the **UAV Neo simulator**. The course runs four weeks:
+Week 1 is hands-on — building your drone, learning to fly, and team building — and
+Weeks 2–4 (these labs) are where you program it to see, fly, and navigate on its own:
 
 - **Week 2 — Vision:** find and measure things in the drone's camera images.
 - **Week 3 — Controls:** turn sensor readings into smooth, stable flight.
