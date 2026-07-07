@@ -2,10 +2,10 @@
 MIT BWSI Autonomous Drone Racing Course - UAV Neo
 GNU General Public License v3.0
 
-Week 3 · Module 3 — PID Control (SOLUTION) — Main orchestrator
+Week 4 · Module 3 — Trajectory Tracking (SOLUTION) — Main orchestrator
 
 Runs every step in sequence against the simulator:
-    drone sim module3_pid/main_solution.py
+    drone sim module3_trajectory/main_solution.py
 Run a single step directly instead:
     drone sim solutions/<step_file>.py
 """
@@ -20,15 +20,13 @@ if _d not in _sys.path:
 import neo_lab
 
 from solutions import (
-    step1_pid_altitude,
-    step2_position_hold,
-    step3_visual_servo,
-    step4_track_reference,
+    step1_timed_segment,
+    step2_smooth_course,
+    step3_orbit,
 )
 
-neo_lab.run_module("Week 3 · Module 3 — PID Control (SOLUTION)", [
-    ("Step 1: PID Altitude Hold", step1_pid_altitude),
-    ("Step 2: Fly a Distance (PID on Position)", step2_position_hold),
-    ("Step 3: Visual Servoing (Vision + PID)", step3_visual_servo),
-    ("Step 4: Track a Moving Reference (Feedforward)", step4_track_reference),
+neo_lab.run_module("Week 4 · Module 3 — Trajectory Tracking (SOLUTION)", [
+    ("Step 1: Track a Timed Segment", step1_timed_segment),
+    ("Step 2: Fly a Smooth Course", step2_smooth_course),
+    ("Step 3: Orbit a Point (Geometric Outer Loop)", step3_orbit),
 ])

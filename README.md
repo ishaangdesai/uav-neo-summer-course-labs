@@ -192,7 +192,7 @@ drone.go()
 |--------|------|-------|
 | `module1_coordinate_frames` | concept   | Euler↔rotation, rotation→quaternion, ENU/NED, thrust sizing |
 | `module2_feedback_control`  | concept + simulator | Proportional control → altitude hold & setpoints |
-| `module3_pid`               | simulator | PID altitude, fly-a-distance, and a vision+PID gate visual-servo |
+| `module3_pid`               | simulator | PID altitude, fly-a-distance, vision+PID visual-servo, and feedforward tracking of a moving reference |
 | `module4_heading_hold`      | simulator | Yaw heading hold from the IMU, with angle wrap-around |
 
 ### Week 4 — Integration (`labs/week4_integration/`)
@@ -203,6 +203,7 @@ Multi-axis flight labs that build on Week 3 control.
 |--------|------|-------|
 | `module1_waypoint`  | simulator | Dead-reckon position and fly to a 3-axis waypoint |
 | `module2_patterns`  | simulator | Sequence waypoints to fly a square |
+| `module3_trajectory`| simulator | Track a timed trajectory, a cubic-spline gate course (drone racing), and orbit a point with a geometric controller |
 
 Each module folder has its own `README.md` with the details.
 
