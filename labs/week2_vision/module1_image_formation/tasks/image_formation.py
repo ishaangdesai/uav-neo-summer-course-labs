@@ -27,6 +27,9 @@ def project_perspective(point_cam, f):
     #### START PUT CODE HERE #########
     x = 0.0
     y = 0.0
+
+    x = X/Z * f
+    y = Y/Z * f
     ###### END PUT CODE HERE #########
     ##################################
     return (x, y)
@@ -45,6 +48,11 @@ def meters_to_pixels(x, y, pixel_size, principal_point):
     #### START PUT CODE HERE #########
     u = 0.0
     v = 0.0
+
+    u=x/pixel_size + cx
+    v=y/pixel_size + cy
+
+
     ###### END PUT CODE HERE #########
     ##################################
     return (u, v)
@@ -58,6 +66,10 @@ def intrinsic_matrix(fx, fy, cx, cy):
     ##################################
     #### START PUT CODE HERE #########
     K = np.eye(3)
+    K[0, 0] = fx
+    K[1, 1] = fy
+    K[0, 2] = cx
+    K[1, 2] = cy
     ###### END PUT CODE HERE #########
     ##################################
     return K
@@ -75,6 +87,13 @@ def project_world_point(K, R, t, point_world):
     #### START PUT CODE HERE #########
     u = 0.0
     v = 0.0
+
+    point_camera = R @ point_world + t
+    pixel_homo = K @ point_camera
+    u=pixel_homo[0]/pixel_homo[2]
+    v=pixel_homo[1]/pixel_homo[2]
+
+    
     ###### END PUT CODE HERE #########
     ##################################
     return (u, v)
@@ -90,6 +109,9 @@ def apply_radial_distortion(x, y, k1, k2):
     ##################################
     #### START PUT CODE HERE #########
     factor = 1.0
+
+    d = x*x+y*y
+    factor = 1.0 + k1 * d + k2 * d * d
     ###### END PUT CODE HERE #########
     ##################################
     return (x * factor, y * factor)
