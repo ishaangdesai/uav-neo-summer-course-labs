@@ -28,6 +28,8 @@ HOVER_TIME = 3.0
 # -- Module-level state -----------------------------------------------------
 _timer = 0.0
 _done  = False
+counter = 0
+image = None
 
 def reset():
     global _timer, _done
@@ -36,7 +38,7 @@ def reset():
 
 
 def update(drone):
-    global _timer, _done
+    global _timer, _done, counter, image
     if _done:
         return True
     drone.flight.stop()   # hover in place
@@ -46,7 +48,15 @@ def update(drone):
     # Gate edges glow bright, so threshold by brightness (HSV Value): neo_lab.bright_mask(
     # image, V_MIN) gives a mask of the bright pixels. Count them, and after HOVER_TIME
     # print the count and set _done. See the README (Key terms).
-
+    _timer += drone.get_delta_time()
+    if counter%35 ==0:
+        image = drone.camera.get_downward_image()
+        bright_mask = neo_lab.bright_mask(image, V_MIN)
+        white_pixels = np.sum(bright_mask == 255)
+        if _timer >= HOVER_TIME:
+            _done = True
+            print(f"Bright edge pixel count: {white_pixels}")
+    counter += 1
     ###### END PUT CODE HERE #########
     ##################################
     return _done

@@ -10,6 +10,7 @@ import drone_core
 import drone_utils as uav_utils
 import cv2
 import numpy as np
+import time
 
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
@@ -28,6 +29,8 @@ HOVER_TIME      = 3.0     # seconds to observe
 # -- Module-level state -----------------------------------------------------
 _timer = 0.0
 _done  = False
+counter=0
+image = None
 
 def reset():
     global _timer, _done
@@ -36,7 +39,7 @@ def reset():
 
 
 def update(drone):
-    global _timer, _done
+    global _timer, _done, image, counter
     if _done:
         return True
     drone.flight.stop()   # hover in place
@@ -47,6 +50,20 @@ def update(drone):
     # grayscale, and threshold at THRESHOLD_VALUE to make a binary mask. Report the
     # fraction of white pixels. Advance _timer and finish (_done) once it reaches
     # HOVER_TIME. See the README (Key terms) for thresholding.
+    _timer += drone.get_delta_time()
+    if counter%10 ==0:
+        image = drone.camera.get_downward_image()
+        print(_timer)
+        grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        _, binary_mask = cv2.threshold(grayscale_image, THRESHOLD_VALUE, 255, cv2.THRESH_BINARY)
+        white_pixels = np.sum(binary_mask == 255)
+        total_pixels = binary_mask.size
+        fraction_white = white_pixels / total_pixels
+        if _timer >= HOVER_TIME:
+            _done = True
+            print(f"Fraction of white pixels: {fraction_white}")
+    counter+=1
+
 
     ###### END PUT CODE HERE #########
     ##################################

@@ -50,7 +50,8 @@ def update(drone):
     if len(points) < MIN_PIXELS:
         drone.flight.stop()                 # lost the edge -> hover, but keep the clock running
     else:
-        edge_col = points[:, 1].mean()      # average column of the bright edge
+        edge_col = points[:, 1].mean()
+        print(edge_col)      # average column of the bright edge
         offset = (edge_col - IMAGE_CENTER) / IMAGE_CENTER   # -1 (left) .. +1 (right)
         roll = uav_utils.clamp(offset * MAX_ROLL, -MAX_ROLL, MAX_ROLL)
         drone.flight.send_pcmd(FORWARD_PITCH, roll, 0, 0)

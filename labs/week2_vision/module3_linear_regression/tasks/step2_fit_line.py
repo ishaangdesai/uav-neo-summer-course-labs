@@ -29,13 +29,16 @@ HOVER_TIME = 3.0
 # -- Module-level state -----------------------------------------------------
 _timer = 0.0
 _done  = False
+counter = 0
+image = None
 
-def fit_line(points):
+def fit_line(points):   
     """Least-squares fit of y = m*x + b. points is the (row, col) array from
     np.argwhere, so column = x and row = y. See the README (Key terms) for the fit."""
     ##################################
     #### START PUT CODE HERE #########
     m, b = 0.0, 0.0
+    m, b =np.polyfit(points[:, 1], points[:, 0], 1)
     ###### END PUT CODE HERE #########
     ##################################
     return m, b
@@ -47,7 +50,7 @@ def reset():
 
 
 def update(drone):
-    global _timer, _done
+    global _timer, _done, counter, image
     if _done:
         return True
     drone.flight.stop()   # hover in place
@@ -59,6 +62,17 @@ def update(drone):
     # False. Otherwise call fit_line() and print m, b. Advance _timer and finish at
     # HOVER_TIME.
 
+    _timer += drone.get_delta_time()
+    image = drone.camera.get_downward_image()
+    bright_mask = neo_lab.bright_mask(image, V_MIN)
+    bright_pixels = np.argwhere(bright_mask == 255)
+    if len(bright_pixels) < MIN_PIXELS:
+        return False
+    else:
+        m, b = fit_line(bright_pixels)
+        print(f"Fitted line: y = {m:.3f}*x + {b:.3f}")
+    if _timer >= HOVER_TIME:
+        _done = True
     ###### END PUT CODE HERE #########
     ##################################
     return _done

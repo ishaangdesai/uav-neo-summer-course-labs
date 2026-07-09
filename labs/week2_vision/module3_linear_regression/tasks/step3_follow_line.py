@@ -24,14 +24,30 @@ import neo_lab
 # -- Constants --------------------------------------------------------------
 V_MIN         = 200
 MIN_PIXELS    = 200
-FORWARD_PITCH = 0.18     # constant forward speed
-MAX_ROLL      = 0.25     # strafe authority for centering
-FOLLOW_TIME   = 12.0     # seconds to follow before landing
+FORWARD_PITCH = .2     # constant forward speed
+MAX_ROLL      = 0.6     # strafe authority for centering
+FOLLOW_TIME   = 40.0     # seconds to follow before landing
 IMAGE_CENTER  = 320      # 640-wide image -> center column
+HOVER_TIME   = 10.0      # seconds to hover before finishing
+kD            = 0.002     # derivative gain for roll control
+kP = 0.6 
+_prev_offset  = 0.0     # previous pixel offset for derivative calculation
+yaw_multiplier = -0.25  # multiplier for yaw control based on offset
 
 # -- Module-level state -----------------------------------------------------
 _timer = 0.0
 _done  = False
+
+def fit_line(points):   
+    """Least-squares fit of y = m*x + b. points is the (row, col) array from
+    np.argwhere, so column = x and row = y. See the README (Key terms) for the fit."""
+    ##################################
+    #### START PUT CODE HERE #########
+    m, b = 0.0, 0.0
+    m, b =np.polyfit(points[:, 1], points[:, 0], 1) if len(points) > 0 else (0.0, 0.0)
+    ###### END PUT CODE HERE #########
+    ##################################
+    return m, b
 
 def reset():
     global _timer, _done
@@ -40,11 +56,40 @@ def reset():
 
 
 def update(drone):
-    global _timer, _done
+    global _timer, _done, _prev_offset, kD, kP
     if _done:
         return True
     ##################################
     #### START PUT CODE HERE #########
+
+    _timer += drone.get_delta_time()
+    image = drone.camera.get_downward_image()
+    #crop image to only look at the top half of the image
+    image = image[0:240, :]
+    bright_mask = neo_lab.bright_mask(image, V_MIN)
+    bright_pixels = np.argwhere(bright_mask == 255)
+    m, b = fit_line(bright_pixels)
+
+    mean_col = bright_pixels[:, 1].mean()
+    if len(bright_pixels) < MIN_PIXELS:
+        print("off track")
+    else:
+        offset = (mean_col - IMAGE_CENTER) / IMAGE_CENTER
+
+        dt = drone.get_delta_time()
+        derivative = (offset - _prev_offset) / dt
+        _prev_offset = offset
+        print(derivative)
+        print(offset)
+
+        roll = uav_utils.clamp(offset * MAX_ROLL * kP + derivative * kD, -MAX_ROLL, MAX_ROLL)
+        yaw =  uav_utils.clamp(m * yaw_multiplier, -1, 1)
+
+
+        drone.flight.send_pcmd(FORWARD_PITCH, roll, yaw, 0)
+
+    if _timer >= FOLLOW_TIME:
+        _done = True
 
     # GOAL: fly forward at FORWARD_PITCH while strafing (roll) to keep the bright
     # edge under the middle of the downward camera.

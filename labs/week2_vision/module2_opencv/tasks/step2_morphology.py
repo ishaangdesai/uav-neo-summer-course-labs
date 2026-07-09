@@ -23,12 +23,14 @@ import neo_lab
 
 # -- Constants --------------------------------------------------------------
 THRESHOLD_VALUE = 127
-KERNEL_SIZE     = 5
+KERNEL_SIZE     = 7
 HOVER_TIME      = 3.0
 
 # -- Module-level state -----------------------------------------------------
 _timer = 0.0
 _done  = False
+counter=0
+image = None
 
 def reset():
     global _timer, _done
@@ -37,7 +39,7 @@ def reset():
 
 
 def update(drone):
-    global _timer, _done
+    global _timer, _done, image, counter
     if _done:
         return True
     drone.flight.stop()   # hover in place
@@ -48,7 +50,25 @@ def update(drone):
     # binary mask like Step 1, then open it with a KERNEL_SIZE square kernel and compare
     # the white-pixel count before and after to see what was removed. Advance _timer and
     # finish once it reaches HOVER_TIME. See the README (Key terms) for morphology.
+    _timer += drone.get_delta_time()
 
+    if counter%10 ==0:
+        image = drone.camera.get_downward_image()
+        print(_timer)
+        grayscale_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        _, binary_mask = cv2.threshold(grayscale_image, THRESHOLD_VALUE, 255, cv2.THRESH_BINARY)
+        kernel = np.ones((KERNEL_SIZE, KERNEL_SIZE), np.uint8)
+        eroded = cv2.erode(binary_mask, kernel, iterations=1)
+        opened = cv2.dilate(eroded, kernel, iterations=1)
+        white_before = np.sum(binary_mask == 255)
+        white_after = np.sum(opened == 255)
+        if _timer >= HOVER_TIME:
+            _done = True
+            print(f"Opened with {KERNEL_SIZE}x{KERNEL_SIZE} kernel removed "
+                  f"{white_before - white_after} speckle pixels ({white_before} -> {white_after})")
+    counter+=1
+
+    
     ###### END PUT CODE HERE #########
     ##################################
     return _done
