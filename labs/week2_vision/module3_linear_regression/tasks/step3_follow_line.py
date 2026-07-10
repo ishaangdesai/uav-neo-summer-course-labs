@@ -24,7 +24,7 @@ import neo_lab
 # -- Constants --------------------------------------------------------------
 V_MIN         = 200
 MIN_PIXELS    = 200
-FORWARD_PITCH = .2     # constant forward speed
+FORWARD_PITCH = .3     # constant forward speed
 MAX_ROLL      = 0.6     # strafe authority for centering
 FOLLOW_TIME   = 40.0     # seconds to follow before landing
 IMAGE_CENTER  = 320      # 640-wide image -> center column

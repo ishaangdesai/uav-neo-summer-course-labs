@@ -25,10 +25,11 @@ import neo_lab
 V_MIN = 200
 MIN_AREA = 300
 MAX_TILT = 0.18      # pitch/roll authority
-CENTER_TOL = 60      # pixels considered 'centered'
+CENTER_TOL = 20      # pixels considered 'centered'
 HOLD_TIME = 2.0      # seconds to stay centered before done
 ROW_CENTER = 240
 COL_CENTER = 320
+kP = 0.005          # proportional gain for pitch/roll control
 
 # -- Module-level state -----------------------------------------------------
 _hold = 0.0
@@ -46,6 +47,31 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+
+
+    image = drone.camera.get_downward_image()
+    largest = neo_lab.largest_bright_contour(image, V_MIN, MIN_AREA)
+    y, x = uav_utils.get_contour_center(largest) if largest is not None else (320, 240)
+    print(x, y)
+    forward_adjustment = y-ROW_CENTER
+    lateral_adjustment = x-COL_CENTER
+    print(lateral_adjustment, forward_adjustment)
+    pitch = uav_utils.clamp(-kP * forward_adjustment, -MAX_TILT, MAX_TILT)
+    roll = uav_utils.clamp(kP * lateral_adjustment, -MAX_TILT, MAX_TILT)
+    print(f"Pitch: {pitch:.3f}, Roll: {roll:.3f}")
+    if abs(forward_adjustment) < CENTER_TOL and abs(lateral_adjustment) < CENTER_TOL:
+        print("done")
+        _hold += drone.get_delta_time()
+        drone.flight.send_pcmd(0, 0, 0, 0)
+
+        if _hold > HOLD_TIME:
+            drone.flight.stop()
+            _done = True
+
+    drone.flight.send_pcmd(pitch, roll, 0, 0)
+
+
+
 
     # GOAL: move with pitch/roll until the gate sits in the middle of the downward
     # camera, hold that for HOLD_TIME, then finish.
