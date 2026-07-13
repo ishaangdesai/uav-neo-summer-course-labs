@@ -21,7 +21,25 @@ def euler_to_rot(roll, pitch, yaw):
     """
     ##################################
     #### START PUT CODE HERE #########
-    R = np.eye(3)
+    rc = np.cos(roll)
+    rs = np.sin(roll)
+    pc = np.cos(pitch)
+    ps = np.sin(pitch)
+    yc = np.cos(yaw)
+    ys = np.sin(yaw)
+
+    matrixR = np.array([[1, 0, 0],
+                        [0, rc, -rs],
+                        [0, rs, rc]])
+    matrixP = np.array([[pc, 0, ps],
+                        [0, 1, 0],
+                        [-ps, 0, pc]])
+    matrixY = np.array([[yc, -ys, 0],
+                        [ys, yc, 0],
+                        [0, 0, 1]])
+    
+    R = matrixY @ matrixP @ matrixR
+
     ###### END PUT CODE HERE #########
     ##################################
     return R
@@ -39,6 +57,13 @@ def rot_to_quat(R):
     x = 0.0
     y = 0.0
     z = 0.0
+
+    w = 0.5 * np.sqrt(1 + np.trace(R))
+    x = (R[2, 1] - R[1, 2]) / (4 * w)
+    y = (R[0, 2] - R[2, 0]) / (4 * w)
+    z = (R[1, 0] - R[0, 1]) / (4 * w)
+
+
     ###### END PUT CODE HERE #########
     ##################################
     return np.array([x, y, z, w])
@@ -54,6 +79,7 @@ def enu_to_ned(vec):
     ##################################
     #### START PUT CODE HERE #########
     result = np.array([0.0, 0.0, 0.0])  # YOUR CODE HERE
+    result = np.array([n, e, -u])
     ###### END PUT CODE HERE #########
     ##################################
     return result
@@ -69,6 +95,10 @@ def thrust_allocation(mass, k_f, total_thrust):
     #### START PUT CODE HERE #########
     per = 0.0    # YOUR CODE HERE
     omega = 0.0  # YOUR CODE HERE
+
+    omega = np.sqrt(total_thrust / (4 * k_f))
+
+    per = k_f * omega**2
     ###### END PUT CODE HERE #########
     ##################################
     return omega, per
@@ -78,7 +108,9 @@ def hover_thrust(mass, g=9.81):
     """Total thrust (N) needed to hover (see README, Key terms)."""
     ##################################
     #### START PUT CODE HERE #########
-    return 0.0  # YOUR CODE HERE
+
+    
+    return mass*g  # YOUR CODE HERE
     ###### END PUT CODE HERE #########
     ##################################
 
