@@ -21,10 +21,10 @@ if _d not in _sys.path:
 import neo_lab
 
 # -- Constants --------------------------------------------------------------
-TARGET_HEIGHT = 5.0    # meters above ground
+TARGET_HEIGHT = 15.0    # meters above ground
 KP = 0.2              # throttle ~ 12 m/s per unit, so keep small
 THROTTLE_LIMIT = 0.5
-TOL = 0.4            # P-control leaves a small steady-state droop
+TOL = 1.0            # P-control leaves a small steady-state droop
 HOLD_TIME = 3.0      # seconds on target before done
 
 # -- Module-level state -----------------------------------------------------
@@ -43,6 +43,15 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+    current_height = neo_lab.height(drone)
+    height_error = TARGET_HEIGHT - current_height
+    throttle = uav_utils.clamp(height_error*KP, -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    print(height_error, throttle)
+    drone.flight.send_pcmd(0.0, 0.0, 0.0, throttle)
+    if abs(height_error) < TOL:
+        _hold += drone.get_delta_time()
+        if _hold >= HOLD_TIME:
+            _done = True
 
     # Use proportional control on the height error to hold TARGET_HEIGHT.
     # neo_lab.height(drone) reports meters above the launch ground. Throttle is a

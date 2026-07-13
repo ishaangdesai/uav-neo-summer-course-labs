@@ -20,7 +20,7 @@ if _d not in _sys.path:
 import neo_lab
 
 # -- Constants --------------------------------------------------------------
-SETPOINTS = [3.0, 6.0, 2.0]   # meters above ground, in order
+SETPOINTS = [15.0, 5.0, 20.0]   # meters above ground, in order
 KP = 0.2
 THROTTLE_LIMIT = 0.5
 TOL = 0.4
@@ -44,6 +44,23 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+    TARGET_HEIGHT = SETPOINTS[_index]
+
+    current_height = neo_lab.height(drone)
+    height_error = TARGET_HEIGHT - current_height
+    throttle = uav_utils.clamp(height_error*KP, -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    print(TARGET_HEIGHT)
+    print(height_error)
+    drone.flight.send_pcmd(0.0, 0.0, 0.0, throttle)
+    if abs(height_error) < TOL:
+        _hold += drone.get_delta_time()
+    if _hold >= HOLD_TIME:
+        _index += 1
+        _hold = 0.0
+    if _index >= len(SETPOINTS):
+            _done = True
+    
+
 
     # GOAL: hold each height in SETPOINTS in turn, moving to the next once you have
     # stayed within TOL of the current one for HOLD_TIME. Finish after the last.
