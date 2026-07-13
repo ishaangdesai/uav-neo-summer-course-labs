@@ -60,6 +60,43 @@ def update(drone):
     ##################################
     #### START PUT CODE HERE #########
 
+    drone.flight.send_pcmd(PROBE_PITCH, 0.0, 0.0, 0.0)  # keep the drone drifting forward
+    _timer += drone.get_delta_time()  # keep track of how long we've been running
+    _frame += 1
+
+    if _frame % SKIP != 0:  # only do the vision work every SKIP-th frame
+        return False
+    print("passed")
+        
+    image = drone.camera.get_downward_image()
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if _prev_pts is None or len(_prev_pts) < MIN_PTS:
+        # detect new features to track
+        _prev_pts = cv2.goodFeaturesToTrack(gray, **FEATURE_PARAMS)
+        _prev_gray = gray
+        return False
+    
+    new_coords, status, _ = cv2.calcOpticalFlowPyrLK(_prev_gray, gray, _prev_pts, None, **LK_PARAMS)
+    if new_coords is not None and status is not None:
+        # keep only the points that were successfully tracked
+        good_new = new_coords[status.flatten() == 1]
+        good_old = _prev_pts[status.flatten() == 1]
+        
+        if len(good_new) > 0:
+            # calculate the average magnitude of the displacement
+            disp = good_new - good_old
+            _last_mag = float(np.mean(np.sqrt(disp[:, 0, 0] ** 2 + disp[:, 0, 1] ** 2)))
+        
+        _prev_pts = good_new.reshape(-1, 1, 2)
+        _prev_gray = gray
+        print(_last_mag)
+    if _timer >= HOVER_TIME:
+        drone.flight.stop()
+        print(f"[Step 1] mean sparse flow magnitude = {_last_mag:.3f} px/interval")
+        _done = True
+        
+
+
     # Keep the drone drifting (PROBE_PITCH) and the clock running EVERY frame; only pull
     # the image and run flow every SKIP-th frame (that vision work is what would lag the
     # sim). On a processed frame, work in grayscale: when you have no features yet (or

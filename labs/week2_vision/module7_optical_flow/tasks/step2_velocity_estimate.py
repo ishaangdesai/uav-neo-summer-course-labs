@@ -31,6 +31,7 @@ PROBE_PITCH = 0.12     # forward drift to create measurable flow
 RUN_TIME = 6.0
 SKIP = 2               # do the vision work every Nth frame
 MIN_PTS = 20
+HOVER_TIME = 4.0       # time to hover before stopping and printing results
 FEATURE_PARAMS = dict(maxCorners=80, qualityLevel=0.01, minDistance=8, blockSize=7)
 LK_PARAMS = dict(winSize=(15, 15), maxLevel=2,
                  criteria=(cv2.TERM_CRITERIA_EPS | cv2.TERM_CRITERIA_COUNT, 10, 0.03))
@@ -57,6 +58,54 @@ def update(drone):
     global _prev_gray, _prev_pts, _timer, _interval, _frame, _done
     if _done:
         return True
+    
+    drone.flight.send_pcmd(PROBE_PITCH, 0.0, 0.0, 0.0)  # keep the drone drifting forward
+    _timer += drone.get_delta_time()  # keep track of how long we've been running
+    _interval += drone.get_delta_time()  # accumulate time since last processed frame
+    _frame += 1
+
+    if _frame % SKIP != 0:  # only do the vision work every SKIP-th frame
+        return False
+
+    image = drone.camera.get_downward_image()
+    gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+    if _prev_pts is None or len(_prev_pts) < MIN_PTS:
+        # detect new features to track
+        _prev_pts = cv2.goodFeaturesToTrack(gray, **FEATURE_PARAMS)
+        _prev_gray = gray
+        return False
+    
+    new_coords, status, _ = cv2.calcOpticalFlowPyrLK(_prev_gray, gray, _prev_pts, None, **LK_PARAMS)
+    if new_coords is not None and status is not None:
+        # keep only the points that were successfully tracked
+        good_new = new_coords[status.flatten() == 1]
+        good_old = _prev_pts[status.flatten() == 1]
+        
+        if len(good_new) > 0:
+            # calculate the average magnitude of the displacement
+            disp = good_new - good_old
+            dx = np.mean(disp[:, 0, 0])
+            dz = np.mean(disp[:, 0, 1])
+        
+        _prev_pts = good_new.reshape(-1, 1, 2)
+        _prev_gray = gray
+    estimated_velocity = 0.0
+    if _interval > 0:
+        # convert the average pixel displacement to meters/second
+        height = neo_lab.height(drone)
+        pixel_footprint = (2 * height * HFOV_TAN) / IMAGE_WIDTH  # meters per pixel
+        evx= (dx * pixel_footprint) / _interval  # m/s
+        evz= (dz * pixel_footprint) / _interval  # m/s
+        _interval = 0.0  # reset the interval timer after processing
+    if _timer >= HOVER_TIME:
+        drone.flight.stop()
+        vx, vy, vz = drone.physics.get_linear_velocity()  # forward velocity in m/s
+        print(f"[Step 2] Estimated  x velocity = {evx:.3f} m/s, Estimated z velocity = {evz:.3f} m/s. x velocity = {vx:.3f} m/s, z velocity = {vz:.3f} m/s")
+        _done = True
+
+
+
+
     ##################################
     #### START PUT CODE HERE #########
 
