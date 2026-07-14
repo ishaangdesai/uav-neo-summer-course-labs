@@ -10,6 +10,7 @@ The catch is angle wrap-around: the error between 350 deg and 10 deg is 20 deg, 
 
 import drone_core
 import drone_utils as uav_utils
+import math
 
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
@@ -36,7 +37,7 @@ def heading_error(target, current):
     """Smallest signed angle (deg) from current heading to target, in -180..180."""
     ##################################
     #### START PUT CODE HERE #########
-    error = 0.0
+    error = (target-current+180)%360-180
     ###### END PUT CODE HERE #########
     ##################################
     return error
@@ -53,6 +54,21 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+
+    pitch, roll, yaw = drone.physics.get_attitude()
+    yaw_power = uav_utils.clamp(heading_error(TARGET_HEADING, yaw), -MAX_YAW, MAX_YAW)
+                           
+
+
+    drone.flight.send_pcmd(0.0, 0.0, yaw_power, 0.0)
+    print(yaw_power)
+    if math.fabs(yaw-TARGET_HEADING)<TOL:
+        _hold+=drone.get_delta_time()
+    else:
+        _hold=0.0
+    if _hold>HOLD_TIME:
+        print("done")
+        _done=True
 
     # GOAL: rotate to TARGET_HEADING and hold it within TOL for HOLD_TIME.
     #
