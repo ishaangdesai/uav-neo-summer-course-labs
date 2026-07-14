@@ -10,6 +10,7 @@ to the next corner when you reach the current one.
 
 import drone_core
 import drone_utils as uav_utils
+import math
 
 # -- Course setup: makes the shared `neo_lab` helper importable.
 #    You don't need to read or change this block. --
@@ -26,8 +27,8 @@ SIDE = 3.0
 # Corners as (right, forward) meters from the start, traced as a square.
 WAYPOINTS = [(0.0, SIDE), (SIDE, SIDE), (SIDE, 0.0), (0.0, 0.0)]
 TARGET_HEIGHT = 3.0
-KP_POS = 0.18
-KD_POS = 0.5
+KP_POS = 0.3
+KD_POS = 0.02
 ALT_KP = 0.12
 ROLL_LIMIT = 0.25
 PITCH_LIMIT = 0.25
@@ -54,6 +55,35 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+    TARGET_FWD = WAYPOINTS[_wp][1]
+    TARGET_RIGHT = WAYPOINTS[_wp][0]
+
+    
+    velocity = drone.physics.get_linear_velocity()
+    dt = drone.get_delta_time()
+    _z += velocity[2] * dt                     # z axis points forward
+    _x += velocity[0] * dt                     # x axis points right
+    z_error = TARGET_FWD - _z
+    x_error = TARGET_RIGHT - _x
+    print(_wp)
+    z_err_dot = -velocity[2]        # d(error)/dt = -forward velocity (clean derivative term)
+    x_err_dot = -velocity[0]
+
+    
+    pitch = uav_utils.clamp(KP_POS*z_error+z_err_dot*KD_POS,
+                            -PITCH_LIMIT, PITCH_LIMIT)
+    roll = uav_utils.clamp(KP_POS*x_error+x_err_dot*KD_POS,
+                           -PITCH_LIMIT, PITCH_LIMIT)
+
+
+    throttle = uav_utils.clamp(ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone)),
+                               -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    drone.flight.send_pcmd(pitch, roll, 0, throttle)
+    if math.fabs(x_error)<WP_TOL and math.fabs(z_error)<WP_TOL and TARGET_HEIGHT - neo_lab.height(drone)<WP_TOL:
+        _wp+=1
+    if _wp>3:
+        _done = True
+
 
     # GOAL: visit each corner in WAYPOINTS in order, then finish.
     #
