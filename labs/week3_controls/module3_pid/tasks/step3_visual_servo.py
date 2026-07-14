@@ -24,11 +24,11 @@ import neo_lab
 
 # -- Constants --------------------------------------------------------------
 V_MIN = 200
-MIN_AREA = 500
+MIN_AREA = 5000
 COL_CENTER = 320
-KP = 0.35
+KP = 0.2
 KI = 0.0
-KD = 0.2
+KD = 0.02
 MAX_YAW = 0.25
 SEARCH_YAW = 0.2
 CENTER_TOL = 0.15    # normalized error considered centered
@@ -45,7 +45,7 @@ def pid_control(err, err_int, err_dot, kp, ki, kd):
     """Return the PID controller output from the three gain terms (see README, Key terms)."""
     ##################################
     #### START PUT CODE HERE #########
-    output = 0.0
+    output = kp * err + ki * err_int + kd * err_dot
     ###### END PUT CODE HERE #########
     ##################################
     return output
@@ -68,6 +68,35 @@ def update(drone):
 
     # GOAL: yaw with a PID loop so a glowing gate stays centered in the forward
     # camera; finish once it is centered (abs(error) < CENTER_TOL) for HOLD_TIME.
+
+    image = drone.camera.get_color_image()
+    dt = drone.get_delta_time()
+    center = neo_lab.largest_bright_contour(image, V_MIN, MIN_AREA)
+    if center is None:
+        drone.flight.send_pcmd(0, 0, SEARCH_YAW, 0)   # scan for a gate
+        _target_col = None                       # drop the lost target
+        _err_int = 0.0                           # reset integral when target is lost
+        _hold = 0.0
+        return False
+    center = uav_utils.get_contour_center(center)[1]
+    
+    print(center)
+
+    _err = (center - COL_CENTER) / COL_CENTER
+    _err_int += _err * dt
+    _err_dot = (_err - _prev_err) / dt if dt > 0 else 0
+    print(_err_dot)
+    _prev_err = _err
+    yaw = uav_utils.clamp(pid_control(_err, _err_int, _err_dot, KP, KI, KD), -MAX_YAW, MAX_YAW)
+    print(yaw)
+    drone.flight.send_pcmd(0, 0, yaw, 0)
+    if abs(_err) < CENTER_TOL:
+        _hold += dt
+    else:
+        _hold = 0.0
+    if _hold >= HOLD_TIME:
+        drone.flight.land()
+        _done = True
     #
     # Available helpers: drone.camera.get_color_image(); drone.get_delta_time();
     #   neo_lab.gate_nearest_center(...) and neo_lab.gate_nearest_to(...) to find gates;

@@ -25,16 +25,16 @@ import neo_lab
 
 # -- Constants --------------------------------------------------------------
 BASE_HEIGHT = 3.0
-AMPLITUDE = 1.5
-PERIOD = 6.0
+AMPLITUDE = 5
+PERIOD = 7.0
 CYCLES = 2
 DURATION = PERIOD * CYCLES
-KP = 0.18
+KP = 0.8
 KI = 0.05
-KD = 0.02
-KFF = 1.0 / 12.0     # throttle is a vertical-velocity command (~12 m/s per unit)
+KD = 0.05
+KFF = 1.0/6.0   # throttle is a vertical-velocity command (~12 m/s per unit)
 INT_CLAMP = 3.0
-THROTTLE_LIMIT = 0.5
+THROTTLE_LIMIT = 0.8
 
 # -- Module-level state -----------------------------------------------------
 _t = 0.0
@@ -42,6 +42,8 @@ _err_int = 0.0
 _prev_err = 0.0
 _max_err = 0.0
 _done = False
+counter = 0
+_tot_error = 0.0
 
 
 def reference(t):
@@ -60,7 +62,7 @@ def pid_control(err, err_int, err_dot, kp, ki, kd):
     """Return the PID controller output from the three gain terms (see README, Key terms)."""
     ##################################
     #### START PUT CODE HERE #########
-    output = 0.0
+    output = kp * err + ki * err_int + kd * err_dot
     ###### END PUT CODE HERE #########
     ##################################
     return output
@@ -76,7 +78,7 @@ def reset():
 
 
 def update(drone):
-    global _t, _err_int, _prev_err, _max_err, _done
+    global _t, _err_int, _prev_err, _max_err, _done, _tot_error, counter
     if _done:
         return True
     dt = drone.get_delta_time()
@@ -84,6 +86,22 @@ def update(drone):
     r, r_dot = reference(_t)
     ##################################
     #### START PUT CODE HERE #########
+    _err = r - neo_lab.height(drone)
+    _err_int += _err*drone.get_delta_time()
+    _err_int = uav_utils.clamp(_err_int, -INT_CLAMP, INT_CLAMP)
+    _err_dot = (_err - _prev_err)/drone.get_delta_time()
+    _prev_err = _err
+    feedforward = KFF * r_dot
+    throttle = uav_utils.clamp(pid_control(_err, _err_int, _err_dot, KP, KI, KD)+feedforward, -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    print(throttle, _err)
+    _tot_error += abs(_err)
+    counter += 1
+    if (math.fabs(_err) > math.fabs(_max_err)):
+        _max_err = math.fabs(_err)
+    if math.fabs(_err)<1:
+        _err_int=0
+
+    drone.flight.send_pcmd(0.0, 0.0, 0.0, throttle)
 
     # GOAL: keep the drone ON the moving target r from reference(_t), not behind it.
     #
@@ -100,6 +118,7 @@ def update(drone):
     if _t >= DURATION:
         drone.flight.stop()
         print(f"[Step 4] Tracked moving reference: max error {_max_err:.2f} m")
+        print("average error: ", _tot_error/counter)
         _done = True
     return _done
 

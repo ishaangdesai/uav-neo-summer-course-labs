@@ -21,9 +21,10 @@ if _d not in _sys.path:
 import neo_lab
 
 # -- Constants --------------------------------------------------------------
-TARGET_DIST = 4.0    # meters forward
-TARGET_HEIGHT = 3.0  # hold launch height
-KP = 0.15
+TARGET_X = 16.0    # meters forward
+TARGET_Z = 7.0
+TARGET_HEIGHT = 10.0  # hold launch height
+KP = 0.4
 KI = 0.0
 KD = 0.5    # strong velocity damping to avoid overshoot
 PITCH_LIMIT = 0.25
@@ -34,9 +35,12 @@ SETTLE_SPEED = 0.25  # must slow below this to count as arrived
 HOLD_TIME = 1.5
 
 # -- Module-level state -----------------------------------------------------
-_pos = 0.0
-_err_int = 0.0
-_prev_err = 0.0
+_x = 0.0
+_z = 0.0
+_err_int_x = 0.0
+_err_int_z = 0.0
+_prev_err_x = 0.0
+_prev_err_z = 0.0
 _t = 0.0
 _hold = 0.0
 _done = False
@@ -45,27 +49,60 @@ def pid_control(err, err_int, err_dot, kp, ki, kd):
     """Return the PID controller output from the three gain terms (see README, Key terms)."""
     ##################################
     #### START PUT CODE HERE #########
-    output = 0.0
+    output = err*kp+err_int*ki+err_dot*kd
     ###### END PUT CODE HERE #########
     ##################################
     return output
 
 def reset():
-    global _pos, _err_int, _prev_err, _t, _hold, _done
-    _pos = 0.0
-    _err_int = 0.0
-    _prev_err = 0.0
+    global _x, _z, _err_int_x, _err_int_z, _prev_err_x, _prev_err_z, _t, _hold, _done
+    _x = 0.0
+    _z = 0.0
+    _err_int_x = 0.0
+    _err_int_z = 0.0
+    _prev_err_x = 0.0
+    _prev_err_z = 0.0
     _t = 0.0
     _hold = 0.0
     _done = False
 
 
 def update(drone):
-    global _pos, _err_int, _prev_err, _t, _hold, _done
+    global _x, _z, _err_int_x, _err_int_z, _prev_err_x, _prev_err_z, _t, _hold, _done
     if _done:
         return True
+    velocity = drone.physics.get_linear_velocity()
+    dt = drone.get_delta_time()
+    _t += dt
+    _z += velocity[2] * dt                     # z axis points forward
+    _x += velocity[0] * dt                     # x axis points right
+    print("x: ", _x, "z: ", _z)
+    z_error = TARGET_Z - _z
+    x_error = TARGET_X - _x
+    _err_int_z += z_error * dt
+    _err_int_x += x_error * dt
+    z_err_dot = -velocity[2]        # d(error)/dt = -forward velocity (clean derivative term)
+    x_err_dot = -velocity[0]
+    _prev_err_z = z_error
+    _prev_err_x = x_error
+    pitch = uav_utils.clamp(pid_control(z_error, _err_int_z, z_err_dot, KP, KI, KD),
+                            -PITCH_LIMIT, PITCH_LIMIT)
+    roll = uav_utils.clamp(pid_control(x_error, _err_int_x, x_err_dot, KP, KI, KD),
+                           -PITCH_LIMIT, PITCH_LIMIT)
+    throttle = uav_utils.clamp(ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone)),
+                               -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    drone.flight.send_pcmd(pitch, roll, 0, throttle)
+    if _t >= MIN_TRAVEL and abs(velocity[2]) < SETTLE_SPEED and abs(velocity[0]) < SETTLE_SPEED and abs(TARGET_HEIGHT - neo_lab.height(drone)) < 1.0:
+        _hold += dt
+    else:
+        _hold = 0.0
+    if _hold >= HOLD_TIME:
+        _done = True
+
     ##################################
     #### START PUT CODE HERE #########
+
+
 
     # There is no direct (x, z) readout, so estimate forward distance by dead reckoning:
     # integrate the forward component of drone.physics.get_linear_velocity() over time.

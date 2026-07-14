@@ -21,10 +21,10 @@ if _d not in _sys.path:
 import neo_lab
 
 # -- Constants --------------------------------------------------------------
-TARGET_HEIGHT = 5.0
-KP = 0.18
-KI = 0.06
-KD = 0.02
+TARGET_HEIGHT = 15.0
+KP = 0.1
+KI = 0.03
+KD = 0.03
 INT_CLAMP = 3.0      # anti-windup limit on the integral
 THROTTLE_LIMIT = 0.5
 TOL = 0.3
@@ -40,7 +40,8 @@ def pid_control(err, err_int, err_dot, kp, ki, kd):
     """Return the PID controller output from the three gain terms (see README, Key terms)."""
     ##################################
     #### START PUT CODE HERE #########
-    output = 0.0
+
+    output = err*kp + err_int*ki + err_dot*kd
     ###### END PUT CODE HERE #########
     ##################################
     return output
@@ -59,6 +60,27 @@ def update(drone):
         return True
     ##################################
     #### START PUT CODE HERE #########
+    _err = TARGET_HEIGHT - neo_lab.height(drone)
+    _err_int += _err*drone.get_delta_time()
+    # print("added error", _err*drone.get_delta_time())
+    _err_int = uav_utils.clamp(_err_int, -INT_CLAMP, INT_CLAMP)
+    # print(_err-_prev_err)
+    _err_dot = (_err - _prev_err)/drone.get_delta_time()
+    _prev_err = _err
+    # print(_err)
+    throttle = uav_utils.clamp(pid_control(_err, _err_int, _err_dot, KP, KI, KD), -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    # print("throttle: ", throttle)
+    # print("integral: ", _err_int)
+    # print("derivative: ", _err_dot)
+
+    drone.flight.send_pcmd(0.0, 0.0, 0.0, throttle)
+    if abs(_err) < TOL:
+        _hold += drone.get_delta_time()
+        _err_int = 0.0
+        if _hold >= HOLD_TIME:
+            _done = True
+    else:
+        _hold = 0.0
 
     # Implement pid_control() above, then use it to drive the drone to TARGET_HEIGHT.
     # Track the integral of the height error (with anti-windup at INT_CLAMP) and its
