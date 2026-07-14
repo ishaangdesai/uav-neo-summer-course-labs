@@ -22,11 +22,11 @@ if _d not in _sys.path:
 import neo_lab
 
 # -- Constants --------------------------------------------------------------
-TARGET_RIGHT = 2.0
-TARGET_FWD = 4.0
-TARGET_HEIGHT = 3.0
+TARGET_RIGHT = 15.0
+TARGET_FWD = 10.0
+TARGET_HEIGHT = 10.0
 KP_POS = 0.15
-KD_POS = 0.5            # brake with velocity so you don't overshoot
+KD_POS = 0.02           # brake with velocity so you don't overshoot
 ALT_KP = 0.12
 ROLL_LIMIT = 0.25
 PITCH_LIMIT = 0.25
@@ -40,6 +40,8 @@ _x = 0.0
 _z = 0.0
 _hold = 0.0
 _done = False
+preverrorx = 0.0
+preverrorz = 0.0
 
 def reset():
     global _x, _z, _hold, _done
@@ -50,9 +52,40 @@ def reset():
 
 
 def update(drone):
-    global _x, _z, _hold, _done
+    global _x, _z, _hold, _done, preverrorx, preverrorz
     if _done:
         return True
+    
+    velocity = drone.physics.get_linear_velocity()
+    dt = drone.get_delta_time()
+    _z += velocity[2] * dt                     # z axis points forward
+    _x += velocity[0] * dt                     # x axis points right
+    z_error = TARGET_FWD - _z
+    x_error = TARGET_RIGHT - _x
+    print(z_error)
+    print(x_error)
+    z_err_dot = -velocity[2]        # d(error)/dt = -forward velocity (clean derivative term)
+    x_err_dot = -velocity[0]
+    preverrorz = z_error
+    preverrorz = x_error
+    
+    pitch = uav_utils.clamp(KP_POS*z_error+z_err_dot*KD_POS,
+                            -PITCH_LIMIT, PITCH_LIMIT)
+    roll = uav_utils.clamp(KP_POS*x_error+x_err_dot*KD_POS,
+                           -PITCH_LIMIT, PITCH_LIMIT)
+
+
+    throttle = uav_utils.clamp(ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone)),
+                               -THROTTLE_LIMIT, THROTTLE_LIMIT)
+    drone.flight.send_pcmd(pitch, roll, 0, throttle)
+    if x_error<POS_TOL and z_error<POS_TOL and TARGET_HEIGHT - neo_lab.height(drone)<POS_TOL:
+        _hold += dt
+    else:
+        _hold = 0.0
+    if _hold >= HOLD_TIME:
+        _done = True
+
+
     ##################################
     #### START PUT CODE HERE #########
 
