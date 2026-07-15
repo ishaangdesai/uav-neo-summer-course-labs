@@ -25,16 +25,17 @@ import neo_lab
 
 # -- Constants --------------------------------------------------------------
 CENTER_RIGHT = 0.0
-CENTER_FWD = 2.0      # start (0,0) sits on the circle, at its near edge
-RADIUS = 2.0
-PERIOD = 6.0          # seconds per revolution at full speed
+CENTER_FWD = 6.0      # start (0,0) sits on the circle, at its near edge
+RADIUS = 6.0
+PERIOD = 12.0          # seconds per revolution at full speed
 REVOLUTIONS = 2
 TARGET_HEIGHT = 3.0
-KP_POS = 0.6          # position error -> velocity (1/s)
+KP_POS = 1.1          # position error -> velocity (1/s)
 ALT_KP = 0.6          # altitude error -> vertical velocity (1/s)
+KFF = 1.4
 
 _W = 2.0 * math.pi / PERIOD     # full-speed angular rate (rad/s)
-SPINUP_TIME = PERIOD            # ease from rest up to full rate over the first lap
+SPINUP_TIME = PERIOD/2            # ease from rest up to full rate over the first lap
 _SPINUP_ANGLE = 0.5 * _W * SPINUP_TIME   # angle covered while spinning up (half-average rate)
 DURATION = SPINUP_TIME + (REVOLUTIONS * 2.0 * math.pi - _SPINUP_ANGLE) / _W
 _FD = 0.01                      # finite-difference step for velocity
@@ -104,9 +105,12 @@ def update(drone):
     # Command the trajectory's own (rotating) velocity, plus a correction that closes any
     # position gap -- the same velocity law as Step 1, but now the feedforward velocity
     # turns with the circle:
-    #   v_right   = vel_r + KP_POS * (pos_r - _x)
-    #   v_forward = vel_f + KP_POS * (pos_f - _z)
-    #   v_up      = ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone))
+
+    v_right   = KFF*vel_r + KP_POS * (pos_r - _x)
+    v_forward = KFF*vel_f + KP_POS * (pos_f - _z)
+    v_up      = ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone))
+    neo_lab.send_velocity(drone, v_right, v_up, v_forward)
+
     # then neo_lab.send_velocity(drone, v_right, v_up, v_forward). You do NOT command the
     # centripetal acceleration yourself -- the velocity controller (the real drone's
     # autopilot) produces it to hold the commanded velocity. See the README

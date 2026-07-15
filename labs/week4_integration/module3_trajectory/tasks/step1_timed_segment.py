@@ -28,7 +28,9 @@ TARGET_HEIGHT = 3.0
 DURATION = 5.0        # seconds to fly the segment
 KP_POS = 0.6          # position error -> velocity (1/s): how hard to close a position gap
 ALT_KP = 0.6          # altitude error -> vertical velocity (1/s)
-
+KFF = 0.3
+PITCH_LIMIT = 0.5
+ROLL_LIMIT = 0.5
 # -- Module-level state -----------------------------------------------------
 _t = 0.0
 _x = 0.0
@@ -75,6 +77,25 @@ def update(drone):
     pos_r, pos_f, vel_r, vel_f = trajectory(_t)
     ##################################
     #### START PUT CODE HERE #########
+
+    
+    z_error = pos_f - _z
+    x_error = pos_r - _x
+    print(z_error, x_error)
+
+    
+    pitch = uav_utils.clamp(KP_POS*z_error+vel_f*KFF,
+                            -PITCH_LIMIT, PITCH_LIMIT)
+    roll = uav_utils.clamp(KP_POS*x_error+vel_r*KFF,
+                           -PITCH_LIMIT, PITCH_LIMIT)
+
+
+    throttle = ALT_KP * (TARGET_HEIGHT - neo_lab.height(drone))
+    drone.flight.send_pcmd(pitch, roll, 0, throttle)
+
+    if _t >= DURATION:
+        _done = True
+
 
     # GOAL: keep the drone on the moving target (pos_r, pos_f) by commanding a VELOCITY.
     #
